@@ -60,6 +60,7 @@ module ActiveAdminImport
       collection_action :import, method: :get do
         authorize!(ActiveAdminImport::Auth::IMPORT, active_admin_config.resource_class)
         @active_admin_import_model = options[:template_object]
+        @active_admin_import_model.file = nil
         render template: options[:template]
       end
 
