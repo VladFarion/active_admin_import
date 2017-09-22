@@ -59,6 +59,8 @@ module ActiveAdminImport
 
     def batch_replace(header_key, options)
       index = header_index(header_key)
+      return unless index
+
       csv_lines.map! do |line|
         from = line[index]
         line[index] = options[from] if options.key?(from)
@@ -67,7 +69,11 @@ module ActiveAdminImport
     end
 
     def values_at(header_key)
-      csv_lines.collect { |line| line[header_index(header_key)] }.uniq
+      csv_lines.collect do |line|
+        next unless index = header_index(header_key)
+
+        line[index]
+      end.compact.uniq
     end
 
     def header_index(header_key)
