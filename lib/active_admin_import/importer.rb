@@ -17,7 +17,8 @@ module ActiveAdminImport
       :headers_rewrites,
       :batch_size,
       :batch_transaction,
-      :csv_options
+      :csv_options,
+      :import_fields
     ].freeze
 
     def initialize(resource, model, options)
@@ -37,7 +38,8 @@ module ActiveAdminImport
 
     def cycle(lines)
       @csv_lines = CSV.parse(lines.join, @csv_options)
-      import_result.add(batch_import, lines.count)
+      cycle_result = batch_import
+      import_result.add(cycle_result, lines.count) if cycle_result
     end
 
     def import
@@ -111,14 +113,34 @@ module ActiveAdminImport
     end
 
     def batch_import
-      batch_result = nil
-      @resource.transaction do
-        run_callback(:before_batch_import)
-        batch_result = resource.import(headers.values, csv_lines, import_options)
-        raise ActiveRecord::Rollback if import_options[:batch_transaction] && batch_result.failed_instances.any?
-        run_callback(:after_batch_import)
-      end
+      run_callback(:before_batch_import)
+      validated_headers, validated_csv_lines = validate_import_data
+      raise ActiveRecord::Rollback if validated_headers.empty? || validated_csv_lines.empty?
+
+      batch_result = resource.import(validated_headers,
+                                     validated_csv_lines, import_options)
+      raise ActiveRecord::Rollback if import_options[:batch_transaction] && batch_result.failed_instances.any?
+      run_callback(:after_batch_import)
       batch_result
+    end
+
+    def validate_import_data
+      return [headers.values, csv_lines] unless options[:import_fields]
+
+      valid_csv_indexes = []
+      validated_headers =
+        headers.values.map.with_index do |header, index|
+          if options[:import_fields].include?(header)
+            valid_csv_indexes << index
+            header
+          end
+        end.compact
+      validated_csv_lines =
+        csv_lines.map do |line|
+          arr = line.select.with_index { |_, index| valid_csv_indexes.include?(index) }
+          arr.empty? ? nil : arr
+        end.compact
+      [validated_headers, validated_csv_lines]
     end
 
     def assign_options(options)

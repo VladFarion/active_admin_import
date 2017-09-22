@@ -24,12 +24,13 @@ module ActiveAdminImport
   # +resource_class+:: resource class name, override to import to another table (default config.resource_class)
   # +resource_label+:: resource label value (default config.resource_label)
   # +plural_resource_label+:: pluralized resource label value (default config.plural_resource_label)
+  # +import_fields+:: list of fields you want to be imported
   #
   module DSL
     DEFAULT_RESULT_PROC = lambda do |result, options|
       model_name = options[:resource_label].downcase
       plural_model_name = options[:plural_resource_label].downcase
-      if result.empty?
+      if !result || result.empty?
         flash[:warning] = I18n.t('active_admin_import.file_empty_error')
       else
         if result.failed?

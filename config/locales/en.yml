@@ -5,7 +5,7 @@ en:
     file: 'File'
     file_error: "Error: %{message}"
     file_format_error: "You can import only valid csv file"
-    file_empty_error: "You can't import empty file"
+    file_empty_error: "Your file is empty or doesn't contain model columns"
     no_file_error: "Please, select file to import"
     details: "Please, select file to import"
     imported:
